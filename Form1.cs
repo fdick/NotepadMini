@@ -40,7 +40,7 @@ namespace WindowsFormsApp1
                     OnDoneSearching();
                 }));
 
-                
+
             };
 
             _fileSearcher.OnCanceled += () =>
@@ -96,6 +96,9 @@ namespace WindowsFormsApp1
             }
             else
             {
+                if (_isPaused)
+                    SetPause(false);
+
                 _tokenSource?.Cancel();
                 _tokenSource = null;
 
@@ -107,19 +110,33 @@ namespace WindowsFormsApp1
 
         private void pauseBtn_Click(object sender, EventArgs e)
         {
-            if (_isPaused)
+            SetPause(!_isPaused);
+        }
+
+        private void browseBtn_Click(object sender, EventArgs e)
+        {
+            using (FolderBrowserDialog dialog = new FolderBrowserDialog())
             {
-                _fileSearcher.SetPause(false);
-                pauseBtn.Text = PAUSE;
+                dialog.Description = "Select a directory";
+                dialog.SelectedPath = dirLabel.Text;
+
+                if (dialog.ShowDialog() == DialogResult.OK)
+                {
+                    dirLabel.Text = dialog.SelectedPath;
+                }
             }
-            else
-            {
-                _fileSearcher.SetPause();
+        }
+
+        private void SetPause(bool pause)
+        {
+            _fileSearcher.SetPause(pause);
+
+            if (pause)
                 pauseBtn.Text = UNPAUSE;
-            }
+            else
+                pauseBtn.Text = PAUSE;
 
-            _isPaused = !_isPaused;
-
+            _isPaused = pause;
         }
 
         private void AddFileToTree(string filePath)

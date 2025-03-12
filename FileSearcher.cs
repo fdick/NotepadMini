@@ -71,6 +71,10 @@ namespace WindowsFormsApp1
             {
                 OnCanceled?.Invoke();
             }
+            catch
+            {
+                OnDoneSearching?.Invoke(SearchTime);
+            }
         }
 
         public void SetPause(bool pause = true)

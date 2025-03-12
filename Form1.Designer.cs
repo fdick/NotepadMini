@@ -39,13 +39,14 @@
             this.progressBar1 = new System.Windows.Forms.ProgressBar();
             this.statusLabel = new System.Windows.Forms.Label();
             this.pauseBtn = new System.Windows.Forms.Button();
+            this.browseBtn = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // dirLabel
             // 
             this.dirLabel.Location = new System.Drawing.Point(85, 76);
             this.dirLabel.Name = "dirLabel";
-            this.dirLabel.Size = new System.Drawing.Size(395, 20);
+            this.dirLabel.Size = new System.Drawing.Size(275, 20);
             this.dirLabel.TabIndex = 0;
             // 
             // label1
@@ -138,12 +139,23 @@
             this.pauseBtn.UseVisualStyleBackColor = true;
             this.pauseBtn.Click += new System.EventHandler(this.pauseBtn_Click);
             // 
+            // browseBtn
+            // 
+            this.browseBtn.Location = new System.Drawing.Point(366, 74);
+            this.browseBtn.Name = "browseBtn";
+            this.browseBtn.Size = new System.Drawing.Size(114, 23);
+            this.browseBtn.TabIndex = 11;
+            this.browseBtn.Text = "Browse";
+            this.browseBtn.UseVisualStyleBackColor = true;
+            this.browseBtn.Click += new System.EventHandler(this.browseBtn_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.GradientActiveCaption;
             this.ClientSize = new System.Drawing.Size(1059, 641);
+            this.Controls.Add(this.browseBtn);
             this.Controls.Add(this.pauseBtn);
             this.Controls.Add(this.statusLabel);
             this.Controls.Add(this.progressBar1);
@@ -175,6 +187,7 @@
         private System.Windows.Forms.ProgressBar progressBar1;
         private System.Windows.Forms.Label statusLabel;
         private System.Windows.Forms.Button pauseBtn;
+        private System.Windows.Forms.Button browseBtn;
     }
 }
 

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -36,12 +38,15 @@ namespace WindowsFormsApp1
         public Action OnCanceled { get; set; }
 
         public int ProcessedFiles { get; private set; }
-        public object FilesCount { get; private set; }
+        public int FilesCount { get; private set; }
         public TimeSpan SearchTime { get; private set; }
-        
-        
+        public bool IsDone { get; private set; }
+
         private ManualResetEventSlim _pauseEvent;
         private DateTime _startTime;
+
+        private DateTime _startPauseTime;
+        private TimeSpan _pauseTime;
 
         public async Task SearchFilesAsync(string directory, string pattern, CancellationToken token)
         {
@@ -53,36 +58,46 @@ namespace WindowsFormsApp1
                     return;
                 }
 
-                var regex = new Regex(pattern/*, RegexOptions.IgnoreCase*/);
-
-                FilesCount = GetCountFilesInDirectory(directory, regex);
+                var regex = new Regex(pattern, RegexOptions.IgnoreCase);
                 _startTime = DateTime.Now;
+                _pauseTime = default;
+                _startPauseTime = default;
                 ProcessedFiles = 0;
                 SearchTime = default;
+                FilesCount = 0;
+                IsDone = false;
 
 
+                FilesCount = await GetCountFilesInDirectory(directory, regex, token);
 
                 await Task.Run(() => SearchDirectory(directory, regex, token), token);
 
-                SearchTime = DateTime.Now - _startTime;
+                SearchTime = DateTime.Now - _startTime - _pauseTime;
                 OnDoneSearching?.Invoke(SearchTime);
+                IsDone = true;
             }
             catch (OperationCanceledException)
             {
                 OnCanceled?.Invoke();
             }
-            catch
-            {
-                OnDoneSearching?.Invoke(SearchTime);
-            }
+            //catch
+            //{
+            //    OnDoneSearching?.Invoke(SearchTime);
+            //}
         }
 
         public void SetPause(bool pause = true)
         {
             if (pause)
+            {
                 _pauseEvent.Reset();
+                _startPauseTime = DateTime.Now;
+            }
             else
+            {
                 _pauseEvent.Set();
+                _pauseTime += DateTime.Now - _startPauseTime;
+            }
         }
 
         private void SearchDirectory(string directory, Regex regex, CancellationToken token)
@@ -92,56 +107,94 @@ namespace WindowsFormsApp1
             if (token.IsCancellationRequested)
                 throw new OperationCanceledException(token);
 
-
-            int countFiles = GetCountFilesInDirectory(directory, regex);
-            var files = Directory.GetFiles(directory);
-
-            foreach (var file in files)
+            try
             {
-                _pauseEvent.Wait();
 
-                if (token.IsCancellationRequested)
-                    throw new OperationCanceledException(token);
+                var filesEnum = Directory.EnumerateFiles(directory);
 
-
-                SearchTime = DateTime.Now - _startTime;
-
-                OnSearch?.Invoke();
-
-
-                if (regex.IsMatch(Path.GetFileName(file)))
+                foreach (var file in filesEnum)
                 {
-                    ProcessedFiles++;
-                    OnSearchedFile?.Invoke(file);
+                    if (token.IsCancellationRequested)
+                        throw new OperationCanceledException(token);
+
+                    _pauseEvent.Wait();
+
+
+                    SearchTime = DateTime.Now - _startTime - _pauseTime;
+
+                    OnSearch?.Invoke();
+
+
+                    if (regex.IsMatch(Path.GetFileName(file)))
+                    {
+                        ProcessedFiles++;
+                        OnSearchedFile?.Invoke(file);
+                    }
+                }
+                foreach (var subDir in Directory.GetDirectories(directory))
+                {
+                    SearchDirectory(subDir, regex, token);
                 }
             }
-            foreach (var subDir in Directory.GetDirectories(directory))
+            catch (UnauthorizedAccessException)
             {
-                SearchDirectory(subDir, regex, token);
+                return;
             }
-
+            catch (Exception ex)
+            {
+                return;
+            }
         }
 
-        private int GetCountFilesInDirectory(string directory, Regex regex)
+
+        async Task<int> GetCountFilesInDirectory(string directory, Regex regex, CancellationToken token)
         {
-            int count = 0;
-            var files = Directory.GetFiles(directory);
 
-            foreach (var file in files)
+            _pauseEvent.Wait();
+
+            if (token.IsCancellationRequested)
+                throw new OperationCanceledException(token);
+
+            try
             {
-                if (regex.IsMatch(Path.GetFileName(file)))
+                int fileCount = 0;
+                var dirEnum = Directory.EnumerateFiles(directory);
+
+                foreach (var d in dirEnum)
                 {
-                    count++;
+                    if (token.IsCancellationRequested)
+                        throw new OperationCanceledException(token);
+
+                    _pauseEvent.Wait();
+
+                    SearchTime = DateTime.Now - _startTime - _pauseTime;
+
+                    if (regex.IsMatch(Path.GetFileName(d)))
+                    {
+                        fileCount++;
+                    }
+
                 }
+
+                var subdirectoryTasks = Directory.EnumerateDirectories(directory)
+                                                 .Select((subdir, index) => Task.Run(() => GetCountFilesInDirectory(subdir, regex, token), token));
+
+
+
+                var subsCount = await Task.WhenAll(subdirectoryTasks);
+
+                //OnSearch?.Invoke();
+
+                return fileCount + subsCount.Sum();
             }
-
-
-            foreach (var subDir in Directory.GetDirectories(directory))
+            catch (UnauthorizedAccessException)
             {
-                count += GetCountFilesInDirectory(subDir, regex);
+                return 0;
             }
-
-            return count;
+            catch (Exception ex)
+            {
+                return 0;
+            }
         }
     }
 }

@@ -22,13 +22,11 @@ namespace WindowsFormsApp1
 
             //load settings
             LoadSettings();
-
             _fileSearcher.OnSearchedFile += (filePath) =>
             {
                 Invoke(new Action(() =>
                 {
                     AddFileToTree(filePath);
-                    statusLabel.Text = $"{PROCESSING}: {_fileSearcher.ProcessedFiles} / {_fileSearcher.FilesCount} ( {_fileSearcher.SearchTime.Seconds}.{_fileSearcher.SearchTime.Milliseconds}  sec )";
                 }));
             };
 
@@ -36,7 +34,6 @@ namespace WindowsFormsApp1
             {
                 Invoke(new Action(() =>
                 {
-                    statusLabel.Text = $"{DONE}: {_fileSearcher.ProcessedFiles} / {_fileSearcher.FilesCount} ( {_fileSearcher.SearchTime.Seconds}.{_fileSearcher.SearchTime.Milliseconds}  sec )";
                     OnDoneSearching();
                 }));
 
@@ -54,6 +51,19 @@ namespace WindowsFormsApp1
 
 
             };
+
+
+            //timer
+            timer1.Tick += (s, e) =>
+            {
+                if (!_fileSearcher.IsDone)
+                    statusLabel.Text = $"{PROCESSING}: {_fileSearcher.ProcessedFiles} / {_fileSearcher.FilesCount} ( {_fileSearcher.SearchTime.Seconds}.{_fileSearcher.SearchTime.Milliseconds}  sec )";
+                else
+                    statusLabel.Text = $"{DONE}: {_fileSearcher.ProcessedFiles} / {_fileSearcher.FilesCount} ( {_fileSearcher.SearchTime.Seconds}.{_fileSearcher.SearchTime.Milliseconds}  sec )";
+
+            };
+
+            timer1.Start();
 
         }
 
@@ -90,6 +100,8 @@ namespace WindowsFormsApp1
 
                 //save settings
                 SaveSettings();
+
+                statusLabel.Text = $"{PROCESSING}";
 
                 await _fileSearcher.SearchFilesAsync(dirLabel.Text, patternLabel.Text, _tokenSource.Token);
 
@@ -154,6 +166,9 @@ namespace WindowsFormsApp1
 
             foreach (string part in parts)
             {
+                if (string.IsNullOrEmpty(part))
+                    continue;
+
                 TreeNode foundNode = nodes[part];
                 if (foundNode == null)
                 {

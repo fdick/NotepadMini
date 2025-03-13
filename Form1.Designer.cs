@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.dirLabel = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
@@ -40,6 +41,7 @@
             this.statusLabel = new System.Windows.Forms.Label();
             this.pauseBtn = new System.Windows.Forms.Button();
             this.browseBtn = new System.Windows.Forms.Button();
+            this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.SuspendLayout();
             // 
             // dirLabel
@@ -188,6 +190,7 @@
         private System.Windows.Forms.Label statusLabel;
         private System.Windows.Forms.Button pauseBtn;
         private System.Windows.Forms.Button browseBtn;
+        private System.Windows.Forms.Timer timer1;
     }
 }
 
